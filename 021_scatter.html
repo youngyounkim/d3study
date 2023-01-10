@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>D3</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      rect:hover {
+        stroke: black;
+        stroke-width: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>확진자수 현황</h1>
+    <div class="canvas"></div>
+    <script>
+      const width = 800;
+      const height = 800;
+      let [mt, mb, mr, ml] = [50, 50, 50, 50];
+
+      const svg = d3
+        .select(".canvas") // canvas class 값을 가진 태그를 선택한다. id도 선택 가능하며 클래스인 경우 가장 우선적으로 찾은 태그를 선택한다.
+        .append("svg") // 선택된 태그에 svg 태그를 삽입한다.
+        .attr("width", width) // svg 태그에 width 값을 삽입.
+        .attr("height", height); // svg 태그에 height 값을 삽입.
+
+      const graphWidth = width - ml - mr;
+      const graphHeight = height - mt - mb;
+
+      const graph = svg
+        .append("g") // g 태그를 삽입한다. 이 태그가 그래프의 베이스가 된다.
+        .attr("width", graphWidth)
+        .attr("height", graphHeight)
+        .attr("transform", `translate(${ml}, ${mt})`); // 선택된 테그에 위치를 ml, mt 값만큼 이동한다.
+
+      const xAxisG = graph
+        .append("g") // x축 삽입
+        .attr("transform", `translate(0, ${graphHeight})`);
+      const yAxisG = graph.append("g");
+
+      d3.json("data/data4.json")
+        .then(function (data) {
+          [_, ...data] = [...data];
+
+          const x = d3
+            .scaleBand() // x 축에 보통 사용
+            .domain(data.map((item) => item.지역이름))
+            .range([0, graphWidth]) // 0 부터 graphWidth까지 범위에 아이템들을 그린다.
+            .padding(0.25);
+
+          const y = d3
+            .scaleLinear() // scale 을 설정하는 함수로 데이터를 비율로 표시한다.
+            .domain([0, d3.max(data, (d) => d.확진자수)])
+            .range([graphHeight, 0]);
+
+          const bars = graph.selectAll().data(data); // graph 객체를 selection 하여 바인딩
+
+          bars
+            .enter()
+            .append("circle")
+            .attr("fill", "hotpink")
+            .attr("cx", (d) => x(d.지역이름) + 50)
+            .attr("cy", (d) => y(d.확진자수))
+            .attr("r", (d) => d.확진자수 / 100);
+
+          bars
+            .enter()
+            .append("text")
+            .attr("x", (d) => x(d.지역이름) + 20)
+            .attr("y", (d) => y(d.확진자수) - 5)
+            .text((d) => `${d.확진자수} / ${d.지역이름}`)
+            .style("font-size", "12px");
+          // .attr('text-anchor', 'end')
+
+          const xAxis = d3.axisBottom(x);
+          const yAxis = d3.axisLeft(y);
+
+          xAxisG.call(xAxis);
+          yAxisG.call(yAxis);
+
+          xAxisG
+            .selectAll("text")
+            .attr("fill", "blue")
+            .attr("transform", "rotate(-45)")
+            .attr("text-anchor", "end");
+        })
+        .catch(function (err) {
+          console.log("실패!!");
+          console.error(err);
+        });
+    </script>
+  </body>
+</html>
